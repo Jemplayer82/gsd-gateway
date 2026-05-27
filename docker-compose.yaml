@@ -1,9 +1,6 @@
 services:
   gsd-gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: gsd-cloud-mcp-gateway:latest
+    image: ghcr.io/jemplayer82/gsd-cloud-mcp-gateway:latest
     container_name: gsd-cloud-mcp-gateway
     restart: unless-stopped
 
@@ -25,20 +22,6 @@ services:
       retries: 3
       start_period: 15s
 
-    # Traefik labels — remove this block if you use Nginx Proxy Manager or
-    # direct port exposure. NPM: add a proxy host pointing to port 8787 on
-    # this container's host with a Let's Encrypt cert.
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.gsd-gateway.rule=Host(`gsd.txferguson.net`)"
-      - "traefik.http.routers.gsd-gateway.entrypoints=websecure"
-      - "traefik.http.routers.gsd-gateway.tls.certresolver=letsencrypt"
-      - "traefik.http.services.gsd-gateway.loadbalancer.server.port=8787"
-
 volumes:
   gsd-gateway-data:
     driver: local
-
-networks:
-  default:
-    name: gsd-gateway-net
