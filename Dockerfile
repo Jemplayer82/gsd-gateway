@@ -6,17 +6,17 @@ RUN git clone --depth 1 https://github.com/open-gsd/gsd-pi.git /build
 
 WORKDIR /build
 
-RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.workspaces=['packages/contracts','packages/rpc-client','packages/mcp-server','packages/cloud-mcp-gateway']; delete p.optionalDependencies; delete p.dependencies; delete p.devDependencies; fs.writeFileSync('package.json',JSON.stringify(p));"
+# Strip root-level deps that aren't needed; keep gsd-pi's pnpm-workspace.yaml
+# intact so pnpm can resolve all internal workspace:* cross-references.
+RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); delete p.optionalDependencies; delete p.dependencies; delete p.devDependencies; fs.writeFileSync('package.json',JSON.stringify(p));"
 
-# gsd-pi uses pnpm workspace:* cross-references; drop its pnpm-workspace.yaml so
-# pnpm picks up the limited workspace list we set in package.json above.
-RUN rm -f pnpm-workspace.yaml && corepack enable pnpm && \
-    pnpm install --ignore-scripts --no-audit --no-fund 2>&1 | tail -5
+RUN npm install -g pnpm && pnpm install --ignore-scripts
 
-RUN pnpm -C packages/contracts run build && \
-    pnpm -C packages/rpc-client run build && \
-    pnpm -C packages/mcp-server run build && \
-    pnpm -C packages/cloud-mcp-gateway run build
+RUN pnpm --filter "@gsd/pi-ai" run build && \
+    pnpm --filter "@opengsd/contracts" run build && \
+    pnpm --filter "@opengsd/rpc-client" run build && \
+    pnpm --filter "@opengsd/mcp-server" run build && \
+    pnpm --filter "@opengsd/cloud-mcp-gateway" run build
 
 FROM node:24-slim
 WORKDIR /app
