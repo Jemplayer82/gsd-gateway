@@ -1,4 +1,4 @@
-FROM node:22-bookworm AS builder
+FROM node:24-bookworm AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 
@@ -8,14 +8,17 @@ WORKDIR /build
 
 RUN node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.workspaces=['packages/contracts','packages/rpc-client','packages/mcp-server','packages/cloud-mcp-gateway']; delete p.optionalDependencies; delete p.dependencies; delete p.devDependencies; fs.writeFileSync('package.json',JSON.stringify(p));"
 
-RUN npm install --ignore-scripts --no-audit --no-fund 2>&1 | tail -5
+# gsd-pi uses pnpm workspace:* cross-references; drop its pnpm-workspace.yaml so
+# pnpm picks up the limited workspace list we set in package.json above.
+RUN rm -f pnpm-workspace.yaml && corepack enable pnpm && \
+    pnpm install --ignore-scripts --no-audit --no-fund 2>&1 | tail -5
 
-RUN npm run build -w @opengsd/contracts && \
-    npm run build -w @opengsd/rpc-client && \
-    npm run build -w @opengsd/mcp-server && \
-    npm run build -w @opengsd/cloud-mcp-gateway
+RUN pnpm -C packages/contracts run build && \
+    pnpm -C packages/rpc-client run build && \
+    pnpm -C packages/mcp-server run build && \
+    pnpm -C packages/cloud-mcp-gateway run build
 
-FROM node:22-slim
+FROM node:24-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
