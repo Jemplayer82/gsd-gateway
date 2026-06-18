@@ -3,6 +3,11 @@ name: Build and Push gsd-cloud-mcp-gateway
 on:
   push:
     branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'docs/**'
   workflow_dispatch:
 
 env:
